@@ -7,17 +7,17 @@ import (
 	"sync"
 )
 
-type Factory func() (ConItem,error)
+type Factory func() (net.Conn,error)
 
 type SimplePool struct {
 	mutex sync.Mutex
 	connection chan net.Conn
-	 factory Factory
+	factory Factory
 }
 
 func NewSimplePool(size,cap int,factory Factory) (Pool,error){
-	fmt.Println("fuck u every day!")
-	if size < 0 && cap < 0 && factory == nil && size > cap {
+	fmt.Println("make simplePool")
+	if size < 0 || cap <= 0 || size > cap {
 		return nil,errors.New("invalid params")
 	}
 
@@ -51,13 +51,16 @@ func (s *SimplePool) Len() int{
 
 func (s *SimplePool) Close() {
 	s.mutex.Lock()
-	defer s.mutex.Unlock()
-	if s.connection == nil || len(s.connection) == 0 {
+	connection := s.connection
+	s.connection = nil
+	s.factory = nil
+	s.mutex.Unlock()
+	if connection == nil {
 		return
 	}
-	close(s.connection)
+	close(connection)
 
-	for con := range s.connection {
+	for con := range connection {
 		con.Close()
 	}
 }
@@ -83,17 +86,18 @@ func (s *SimplePool) Put(con net.Conn) error {
 	}
 }
 
-func (s *SimplePool) Get() (ConItem,error){
+func (s *SimplePool) Get() (net.Conn,error){
 	cons := s.GetAllConnection()
-	if cons == nil || len(cons) == 0 {
+	if cons == nil {
 		return nil,ErrClosed
 	}
 
 	select {
 	case conn := <-cons:
-		if cons == nil {
+		if conn == nil {
 			return  nil,ErrClosed
 		}
+		return s.MakeConn(conn),nil
 	default:
 		conn,err := s.factory()
 		if err != nil {
@@ -102,7 +106,7 @@ func (s *SimplePool) Get() (ConItem,error){
 		return s.MakeConn(conn),nil
 	}
 }
-func (s *SimplePool) MakeConn(con net.Conn) ConItem{
+func (s *SimplePool) MakeConn(con net.Conn) net.Conn{
 	p := &ConItem{pool:s}
 	p.Conn = con
 	return p
