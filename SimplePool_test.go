@@ -75,7 +75,7 @@ func Test_GetSync(t *testing.T){
 		t.Errorf("create connection pool failed")
 	}
 
-	if pool.Len() != size -1 {
+	if pool.Len() != size  {
 		t.Errorf("expect len:%d,but get %d",size,pool.Len())
 	}
 
@@ -102,7 +102,7 @@ func Test_GetSync(t *testing.T){
 }
 
 func Test_Put(t *testing.T) {
-	pool,err := NewSimplePool(size,cap,factory)
+	pool,err := NewSimplePool(0,cap,factory)
 	defer pool.Close()
 	if err != nil {
 		t.Errorf("create connection pool,but meet:",err)
@@ -158,7 +158,7 @@ func Test_Cap(t *testing.T){
 	pool,_ := NewSimplePool(size,cap,factory)
 	defer  pool.Close()
 
-	if pool.Len() != cap {
+	if pool.Len() != size {
 		t.Errorf("")
 	}
 }
