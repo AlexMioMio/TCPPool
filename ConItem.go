@@ -2,16 +2,18 @@ package TPool
 
 import (
 	"net"
+	"fmt"
 )
 
 type ConItem struct {
-	isUsed bool
+	unUsed bool
 	net.Conn
 	pool *SimplePool
 }
 
 func (c *ConItem) Close() error {
-	if c.isUsed {
+	if c.unUsed {
+		fmt.Println("fuck")
 		if c.Conn != nil {
 			return c.Conn.Close()
 		}
@@ -22,7 +24,8 @@ func (c *ConItem) Close() error {
 }
 
 func (c *ConItem) MarkUnused() {
-	c.isUsed = true
+	c.unUsed = true
 }
+
 
 
